@@ -25,7 +25,11 @@ COPY_IF_DIFFERENT = $(CHPL_MAKE_PYTHON) $(CHPL_MAKE_HOME)/util/config/update-if-
 
 CHPL_DOC_PRIMERS_BUILD_DIR = ../build/doc/primers
 CHPL_DOC_PRIMERS_RST_DIR = $(SOURCEDIR)/primers
-CHPL2RSTOPTS = --output=rst --prefix=$(CHPL_DOC_PRIMERS_BUILD_DIR) --link=$(WEB_DOC_DIR)$(WEB_DOC_VERSION)
+CHPL2RSTOPTS_PRIMERS = --output=rst --prefix=$(CHPL_DOC_PRIMERS_BUILD_DIR) --link=$(WEB_DOC_DIR)$(WEB_DOC_VERSION)
+
+CHPL_DOC_PATTERNS_BUILD_DIR = ../build/doc/patterns
+CHPL_DOC_PATTERNS_RST_DIR = $(SOURCEDIR)/patterns
+CHPL2RSTOPTS_PATTERNS = --output=rst --prefix=$(CHPL_DOC_PATTERNS_BUILD_DIR) --link=$(WEB_DOC_DIR)$(WEB_DOC_VERSION)
 
 CHPL_DOC_EXAMPLES_BUILD_DIR = ../build/doc/examples
 CHPL_DOC_EXAMPLES_RST_DIR = $(SOURCEDIR)/examples
@@ -49,6 +53,7 @@ help-source:
 	@echo "  man-chapel     to invoke 'make man'"
 	@echo "  module-docs    to invoke 'make documentation' in ../modules"
 	@echo "  primers        to generate primer docs in $(SOURCEDIR)/primers/"
+	@echo "  patterns       to generate patterns docs in $(SOURCEDIR)/patterns/"
 	@echo "  examples       to generate hellos docs in $(SOURCEDIR)/examples/"
 	@echo "  symlinks       to create symlinks from ../man and ../test"
 	@echo "  clean          to remove all generated files excluding ../build/doc"
@@ -74,7 +79,7 @@ man-chapel: FORCE
 	$(MAKE) man
 
 
-source: collect-syntax module-docs primers examples symlinks compiler-internals
+source: collect-syntax module-docs primers patterns examples symlinks compiler-internals
 
 
 collect-syntax:
@@ -99,11 +104,23 @@ primers:
 	@rm -rf $(CHPL_DOC_PRIMERS_BUILD_DIR)
 	@mkdir -p $(CHPL_DOC_PRIMERS_BUILD_DIR)
 	@#Note - this assumes that we are not in a release tar ball
-	@$(CHPL2RST) $(CHPL2RSTOPTS) ../test/release/examples/primers/*.chpl
-	@$(CHPL2RST) $(CHPL2RSTOPTS) ../test/release/examples/primers/*doc.chpl --codeblock
+	@$(CHPL2RST) $(CHPL2RSTOPTS_PRIMERS) ../test/release/examples/primers/*.chpl
+	@$(CHPL2RST) $(CHPL2RSTOPTS_PRIMERS) ../test/release/examples/primers/*doc.chpl --codeblock
 	@mkdir -p $(CHPL_DOC_PRIMERS_RST_DIR)
 	@cp -f $(SOURCEDIR)/meta/primers/* $(CHPL_DOC_PRIMERS_BUILD_DIR)
 	@$(COPY_IF_DIFFERENT) $(CHPL_DOC_PRIMERS_BUILD_DIR) $(CHPL_DOC_PRIMERS_RST_DIR)
+
+patterns:
+	@echo
+	@echo "Generating patterns from "'$$CHPL_HOME'"/test/release/examples to $(SOURCEDIR)/patterns"
+	@rm -rf $(CHPL_DOC_PATTERNS_BUILD_DIR)
+	@mkdir -p $(CHPL_DOC_PATTERNS_BUILD_DIR)
+	@#Note - this assumes that we are not in a release tar ball
+	@$(CHPL2RST) $(CHPL2RSTOPTS_PATTERNS) ../test/release/examples/patterns/*.chpl
+	@mkdir -p $(CHPL_DOC_PATTERNS_RST_DIR)
+	@cp -f $(SOURCEDIR)/meta/patterns/* $(CHPL_DOC_PATTERNS_BUILD_DIR)
+	@$(COPY_IF_DIFFERENT) $(CHPL_DOC_PATTERNS_BUILD_DIR) $(CHPL_DOC_PATTERNS_RST_DIR)
+
 
 examples:
 	@echo
@@ -156,7 +173,7 @@ cleanall: clean-source clean-build clean-build-dir clean-doxygen FORCE
 
 clobber: clean-source clean-build clean-build-dir clean-doxygen FORCE
 
-clean-source: clean-module-docs clean-primers clean-examples clean-symlinks clean-collect-syntax clean-compiler-internals FORCE
+clean-source: clean-module-docs clean-primers clean-patterns clean-examples clean-symlinks clean-collect-syntax clean-compiler-internals FORCE
 
 clean-build-dir: FORCE
 	rm -rf ../build/doc
@@ -181,6 +198,12 @@ clean-primers: FORCE
 	@echo
 	@echo "Removing primers generated into $(CHPL_DOC_HELLO_DIR)"
 	rm -rf $(SOURCEDIR)/primers/
+
+clean-patterns: FORCE
+	@echo
+	@echo "Removing patterns generated into $(CHPL_DOC_HELLO_DIR)"
+	rm -rf $(SOURCEDIR)/patterns/
+
 
 clean-examples: FORCE
 	@echo
