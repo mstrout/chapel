@@ -104,20 +104,217 @@ class ListNode {
 
 // OUTLINE: The rest of this primer(?) explores the space of what kind of
 // default initializations occur for the different kinds of memory management
-// reference types.  It also explores the space of default coercions, casts,
+// reference types.  It also looks at when initializations and deinitializations
+// occur.  It also explores the space of default coercions, casts,
 // and assignments to and from various memory management reference types that
 // Chapel currently has with some discussion of what we might potentially want
 // to modify for the Chapel 2.0 effort.
 
 // OUTLINE: The default initializations for the different class reference types.
+class PODclass { // class with some plain old datatypes
+  var str : string;
+  var num : int;
+}
 
-// OUTLINE: Where does nilable and non-nilable come into play?
+// default initialization is that the class instance and reference var are owned
+var newDefaultInit = new PODclass("newDefaultInit",1);
+writeln("newDefaultInit = ", newDefaultInit);
 
-// OUTLINE: What kind of reference can be assigned to what other kind of reference.
+// this works due to split init
+var splitInit : PODclass; 
+splitInit = new PODclass("splitInit",3);
+writeln("splitInit = ", splitInit);
 
-// OUTLINE: What kind of reference can be cast to what other kind of reference.
+// All of the other cases with "var x = new <management strategy> ClassName(...)"
+// pattern.
+var newOwnedRef = new owned PODclass("newOwnedRef", 11);
+var newSharedRef = new shared PODclass("newSharedRef", 22);
+var newUnmanagedRef = new unmanaged PODclass("newUnmanagedRef", 33);
+var newBorrowedRef = new borrowed PODclass("newBorrowedRef", 44);
+writeln("newOwnedRef = ", newOwnedRef);
+writeln("newSharedRef = ", newSharedRef);
+writeln("newUnmanagedRef = ", newUnmanagedRef);
+writeln("newBorrowedRef = ", newBorrowedRef);
 
-// OUTLINE: What kind of reference can be coerced to what other kind of reference.
+// Creating nilable class instances.
+// reference: https://chapel-lang.org/docs/main/language/spec/classes.html
+// FIXME(doc): doesn't have this example in it but should
+var newDefaultRefNilable = new PODclass?("newDefaultRefNilable", 01);
+var newOwnedRefNilable = new owned PODclass?("newOwnedRefNilable", 21);
+var newSharedRefNilable = new shared PODclass?("newSharedRefNilable", 32);
+var newUnmanagedRefNilable = new unmanaged PODclass?("newUnmanagedRefNilable", 43);
+var newBorrowedRefNilable = new borrowed PODclass?("newBorrowedRefNilable", 54);
+writeln("newOwnedRefNilable = ", newOwnedRefNilable);
+writeln("newSharedRefNilable = ", newSharedRefNilable);
+writeln("newUnmanagedRefNilable = ", newUnmanagedRefNilable);
+writeln("newBorrowedRefNilable = ", newBorrowedRefNilable);
+
+// The below don't work and I get a reasonable error message about not being
+// able to default-initialize nullPtr because it is non-nilable and should try 
+// PODclass? instead
+//var nullPtr : unmanaged PODclass;
+//var nullPtr : owned PODclass;
+//var nullPtr : shared PODclass;
+//var nullPtr : borrowed PODclass;
+
+// All the below work with ref vars initialized to point at a nil
+var ownNullPtr : owned PODclass?;
+var shareNullPtr : owned PODclass?;
+var unmanagedNullPtr : unmanaged PODclass?;
+var borrowedNullPtr : borrowed PODclass?;
+writeln("ownNullPtr = ", ownNullPtr);
+writeln("shareNullPtr = ", shareNullPtr);
+writeln("unmanagedNullPtr = ", unmanagedNullPtr);
+writeln("borrowedNullPtr = ", borrowedNullPtr);
+
+// FIXME: this should work but doesn't, shouldn't owned be the default?
+// get error: cannot default-initialize a variable with generic type
+//var nullPtr : PODclass?;
+//writeln("nullPtr = ", nullPtr);
+
+// Nonnilable, declaring vars and initializing.
+var newDefaultRefDecl : PODclass = new PODclass("newDefaultRefDecl", 7);
+var newOwnedRefDecl : owned PODclass = new owned PODclass("newOwnedRefDecl", 111);
+var newSharedRefDecl : shared PODclass = 
+        new shared PODclass("newSharedRefDecl", 222);
+var newUnmanagedRefDecl : unmanaged PODclass = 
+        new unmanaged PODclass("newUnmanagedRefDecl", 333);
+var newBorrowedRefDecl : borrowed PODclass = 
+        new borrowed PODclass("newBorrowedRefDecl", 444);
+writeln("newDefaultRefDecl = ", newDefaultRefDecl);
+writeln("newOwnedRefDecl = ", newOwnedRefDecl);
+writeln("newSharedRefDecl = ", newSharedRefDecl);
+writeln("newUnmanagedRefDecl = ", newUnmanagedRefDecl);
+writeln("newBorrowedRefDecl = ", newBorrowedRefDecl);
+
+// Nilable, declaring vars and initializing.
+var newDefaultRefNilableDecl : PODclass? = 
+        new PODclass?("newDefaultRefNilableDecl", 01);
+var newOwnedRefNilableDecl : owned PODclass? = 
+        new owned PODclass?("newOwnedRefNilableDecl", 210);
+var newSharedRefNilableDecl : shared PODclass? = 
+        new shared PODclass?("newSharedRefNilableDecl", 320);
+var newUnmanagedRefNilableDecl : unmanaged PODclass? = 
+        new unmanaged PODclass?("newUnmanagedRefNilableDecl", 430);
+var newBorrowedRefNilableDecl : borrowed PODclass? = 
+        new borrowed PODclass?("newBorrowedRefNilableDecl", 540);
+writeln("newOwnedRefNilableDecl = ", newOwnedRefNilableDecl);
+writeln("newSharedRefNilableDecl = ", newSharedRefNilableDecl);
+writeln("newUnmanagedRefNilableDecl = ", newUnmanagedRefNilableDecl);
+writeln("newBorrowedRefNilableDecl = ", newBorrowedRefNilableDecl);
+
+
+//==== ASSIGNMENT 
+// What kind of reference can be assigned to what other kind of reference.
+
+//---- assigning into an owned reference variable from another ref var
+// from above, var newDefaultInit = new PODclass("newDefaultInit",1);
+newDefaultInit = newOwnedRef;
+// FIXME: will want to check that his causes deinit to be called on what
+// newDefaultInit used to refer to.
+
+// error: Cannot assign to owned PODclass from shared PODclass
+//newDefaultInit = newSharedRef;
+
+// error: Cannot assign to owned PODclass from unmanaged PODclass
+//newDefaultInit = newUnmanagedRef;
+
+// error: Cannot assign to owned PODclass from borrowed PODclass
+//newDefaultInit = newBorrowedRef;
+
+//---- assigning into an owned reference variable from a `new` expression
+newDefaultInit = new owned PODclass("newOwnedExpr", 300);
+
+// error: Cannot assign to owned PODclass from shared PODclass
+//newDefaultInit = new shared PODclass("newSharedExpr", 301);
+
+// error: Cannot assign to owned PODclass from unmanaged PODclass
+//newDefaultInit = new unmanaged PODclass("newUnmanagedExpr", 302);
+
+// error: Cannot assign to owned PODclass from borrowed PODclass
+//newDefaultInit = new borrowed PODclass("newUnmanagedExpr", 303);
+
+//---- assigning into an shared reference variable from another ref var
+// from above, var newSharedRef = new shared PODclass("newSharedRef", 22);
+newSharedRef = newOwnedRef;
+newSharedRef = newSharedRef;
+
+// error: Cannot assign to shared PODclass from unmanaged PODclass
+//newSharedRef = newUnmanagedRef;
+
+// error: Cannot assign to shared PODclass from borrowed PODclass
+//newSharedRef = newBorrowedRef;
+
+//---- assigning into an shared reference variable from a `new` expression
+newSharedRef = new owned PODclass("newOwnedExpr", 300);
+newSharedRef = new shared PODclass("newSharedExpr", 301);
+
+// error: Cannot assign to shared PODclass from unmanaged PODclass
+//newSharedRef = new unmanaged PODclass("newUnmanagedExpr", 302);
+
+// error: Cannot assign to shared PODclass from borrowed PODclass
+//newSharedRef = new borrowed PODclass("newUnmanagedExpr", 303);
+
+//---- assigning into a unmanaged reference variable from another ref var
+// from above, var newUnmanagedRef = new unmanaged PODclass("newUnmanagedRef", 33);
+
+// error: Cannot assign to unmanaged PODclass from owned PODclass
+//newUnmanagedRef = newOwnedRef;
+
+// error: Cannot assign to unmanaged PODclass from shared PODclass
+//newUnmanagedRef = newSharedRef;
+
+newUnmanagedRef = newUnmanagedRef;
+
+// error: Cannot assign to unmanaged PODclass from borrowed PODclass
+//newUnmanagedRef = newBorrowedRef;
+
+//---- assigning into an unmanaged reference variable from a `new` expression
+
+// error: Cannot assign to unmanaged PODclass from owned PODclass
+//newUnmanagedRef = new owned PODclass("newOwnedExpr", 300);
+
+// error: Cannot assign to unmanaged PODclass from shared PODclass
+//newUnmanagedRef = new shared PODclass("newSharedExpr", 301);
+
+newUnmanagedRef = new unmanaged PODclass("newUnmanagedExpr", 302);
+
+// error: Cannot assign to unmanaged PODclass from borrowed PODclass
+//newUnmanagedRef = new borrowed PODclass("newUnmanagedExpr", 303);
+
+//---- assigning into a borrowed reference variable from another ref var
+// from above, var newBorrowedRef = new borrowed PODclass("newBorrowedRef", 44);
+
+// error: Cannot assign to unmanaged PODclass from owned PODclass
+newBorrowedRef = newOwnedRef;
+
+// error: Cannot assign to unmanaged PODclass from shared PODclass
+newBorrowedRef = newSharedRef;
+
+newBorrowedRef = newUnmanagedRef;
+
+// error: Cannot assign to unmanaged PODclass from borrowed PODclass
+newBorrowedRef = newBorrowedRef;
+
+//---- assigning into an borrowed reference variable from a `new` expression
+
+// error: Cannot assign to unmanaged PODclass from owned PODclass
+newBorrowedRef = new owned PODclass("newOwnedExpr", 300);
+
+// error: Cannot assign to unmanaged PODclass from shared PODclass
+newBorrowedRef = new shared PODclass("newSharedExpr", 301);
+
+newBorrowedRef = new unmanaged PODclass("newUnmanagedExpr", 302);
+
+// error: Cannot assign to unmanaged PODclass from borrowed PODclass
+newBorrowedRef = new borrowed PODclass("newUnmanagedExpr", 303);
+
+
+
+
+//==== What kind of reference can be cast to what other kind of reference.
+
+//==== What kind of reference can be coerced to what other kind of reference.
 
 
 //---- can I do an example to illustrate this?
