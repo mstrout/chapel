@@ -206,6 +206,9 @@ writeln("newBorrowedRefNilableDecl = ", newBorrowedRefNilableDecl);
 
 //==== ASSIGNMENT 
 // What kind of reference can be assigned to what other kind of reference.
+// FIXME: check if all the below is consistent with the description of
+// what can be implicitly converted seen at
+// https://chapel-lang.org/docs/main/language/spec/conversions.html#implicit-class-conversions
 
 //---- assigning into an owned reference variable from another ref var
 // from above, var newDefaultInit = new PODclass("newDefaultInit",1);
@@ -479,9 +482,515 @@ writeln("borrowRefNonNilD = ", borrowRefNonNilD);
 //==== What kind of reference can be cast to what other kind of reference.
 // reference: https://chapel-lang.org/docs/main/language/spec/conversions.html#explicit-class-conversions
 
+{ // putting into a scope to avoid problem of not being able to transfer 
+  // ownership from an outer variable
+
+  var defaultRef1 = new PODclass("defaultRef1", 77);
+  writeln("defaultRef1 = ", defaultRef1);
+  var ownedRefNonNilCast      = defaultRef1 : owned;
+  writeln("ownedRefNonNilCast = ", ownedRefNonNilCast);
+  // 489 error: Illegal use of dead value
+  // 487 note: 'defaultRef1' is dead due to ownership transfer here
+  // 489: error: mention of non-nilable variable after ownership is transferred out of it
+  // 487: note: ownership transfer occurred here
+  //writeln("defaultRef1 after cast = ", defaultRef1);
+
+  // error: Cannot change class type in conversion from 'owned PODclass' to 
+  // 'shared PODclass?'
+  //var sharedRefNonNilCast     = defaultRef : shared;
+
+  var defaultRef2 = new PODclass("defaultRef2", 78);
+  writeln("defaultRef2 = ", defaultRef2);
+  var unmanagedRefNonNilCast  = defaultRef2 : unmanaged;
+  writeln("unmanagedRefNonNilCast = ", unmanagedRefNonNilCast);
+  // FIXME: should defaultRef2 lose ownership?
+  writeln("defaultRef2 after cast = ", defaultRef2);
+
+  var defaultRef3 = new PODclass("defaultRef3", 79);
+  writeln("defaultRef3 = ", defaultRef3);
+  var borrowedRefNonNilCast   = defaultRef3 : borrowed;
+  writeln("borrowedRefNonNilCast = ", borrowedRefNonNilCast);
+  writeln("defaultRef3 after cast = ", defaultRef3);
+
+  var defaultRef4 = new PODclass("defaultRef4", 80);
+  writeln("defaultRef4 = ", defaultRef4);
+  var ownedRefNilCast         = defaultRef4 : owned PODclass?;
+  writeln("ownedRefNilCast = ", ownedRefNilCast);
+  // error: Illegal use of dead value
+  // same 4 messages as example above
+  //writeln("defaultRef4 after cast = ", defaultRef4);
+
+  // error: Cannot change class type in conversion from 'owned PODclass' to 
+  // 'shared PODclass?'
+  //var sharedRefNilCast        = defaultRef : shared PODclass?;
+
+  var defaultRef5 = new PODclass("defaultRef5", 81);
+  writeln("defaultRef5 = ", defaultRef5);
+  var unmanagedRefNilCast     = defaultRef5 : unmanaged PODclass?;
+  writeln("unmanagedRefNilCast = ", unmanagedRefNilCast);
+  // FIXME: should defaultRef5 lose ownership?
+  writeln("defaultRef5 after cast = ", defaultRef5);
+
+  var defaultRef6 = new PODclass("defaultRef6", 82);
+  writeln("defaultRef6 = ", defaultRef6);
+  var borrowedRefNilCast      = defaultRef6 : borrowed PODclass?;
+  writeln("borrowedRefNilCast = ", borrowedRefNilCast);
+  writeln("defaultRef6 after cast = ", defaultRef6);
+}
+//==== casting a shared reference into variables
+{ // putting in scope to reuse some var names
+
+  // casting shared to own
+  //var sharedRef1 = new shared PODclass("sharedRef1", 83);
+  //writeln("sharedRef1 = ", sharedRef1);
+  // error: illegal cast from shared PODclass to owned
+  //var ownedRefNonNilCast      = sharedRef1 : owned;
+  //writeln("ownedRefNonNilCast = ", ownedRefNonNilCast);
+  //writeln("sharedRef1 after cast = ", sharedRef1);
+
+  // casting shared to shared
+  var sharedRef2 = new shared PODclass("sharedRef2", 84);
+  writeln("sharedRef2 = ", sharedRef2);
+  var sharedRefNonNilCast     = sharedRef2 : shared;
+  writeln("sharedRefNonNilCast = ", sharedRefNonNilCast);
+  writeln("sharedRef2 after cast = ", sharedRef2);
+
+  // FIXME: should the below work?
+  var sharedRef3 = new shared PODclass("sharedRef3", 85);
+  writeln("sharedRef3 = ", sharedRef3);
+  var unmanagedRefNonNilCast  = sharedRef3 : unmanaged;
+  writeln("unmanagedRefNonNilCast = ", unmanagedRefNonNilCast);
+  writeln("sharedRef3 after cast = ", sharedRef3);
+
+  var sharedRef4 = new shared PODclass("sharedRef4", 86);
+  writeln("sharedRef4 = ", sharedRef4);
+  var borrowedRefNonNilCast   = sharedRef4 : borrowed;
+  writeln("borrowedRefNonNilCast = ", borrowedRefNonNilCast);
+  writeln("sharedRef4 after cast = ", sharedRef4);
+
+  //var sharedRef5 = new shared PODclass("sharedRef5", 87);
+  //writeln("sharedRef5 = ", sharedRef5);
+  // error: illegal cast from shared PODclass to owned PODclass?
+  //var ownedRefNilCast         = sharedRef5 : owned PODclass?;
+  //writeln("ownedRefNilCast = ", ownedRefNilCast);
+  //writeln("sharedRef5 after cast = ", sharedRef5);
+
+  var sharedRef6 = new shared PODclass("sharedRef6", 88);
+  writeln("sharedRef6 = ", sharedRef6);
+  var sharedRefNilCast        = sharedRef6 : shared PODclass?;
+  writeln("sharedRefNilCast = ", sharedRefNilCast);
+  writeln("sharedRef6 after cast = ", sharedRef6);
+
+  // FIXME: should the below work?
+  var sharedRef7 = new shared PODclass("sharedRef7", 89);
+  writeln("sharedRef7 = ", sharedRef7);
+  var unmanagedRefNilCast     = sharedRef7 : unmanaged PODclass?;
+  writeln("unmanagedRefNilCast = ", unmanagedRefNilCast);
+  writeln("sharedRef7 after cast = ", sharedRef7);
+
+  var sharedRef8 = new shared PODclass("sharedRef8", 90);
+  writeln("sharedRef8 = ", sharedRef8);
+  var borrowedRefNilCast      = sharedRef8 : borrowed PODclass?;
+  writeln("borrowedRefNilCast = ", borrowedRefNilCast);
+  writeln("sharedRef8 after cast = ", sharedRef8);
+}
+//==== casting an unmanaged reference into variables
+{ // putting in scope to reuse some var names
+
+  // casting unmanaged to owned
+  //var unmanagedRef1 = new unmanaged PODclass("unmanagedRef1", 91);
+  //writeln("unmanagedRef1 = ", unmanagedRef1);
+  // FIXME: I expected this to work.  Why doesn't it?
+  // error: illegal cast from unmanaged PODclass to owned
+  //var ownedRefNonNilCast      = unmanagedRef1 : owned;
+  //writeln("ownedRefNonNilCast = ", ownedRefNonNilCast);
+  //writeln("unmanagedRef1 after cast = ", unmanagedRef1);
+
+  // casting unmanaged to shared
+  //var unmanagedRef2 = new unmanaged PODclass("unmanagedRef2", 92);
+  //writeln("unmanagedRef2 = ", unmanagedRef2);
+  // FIXME: I expected this to work as well.
+  // error: illegal cast from unmanaged PODclass to shared
+  //var sharedRefNonNilCast     = unmanagedRef2 : shared;
+  //writeln("sharedRefNonNilCast = ", sharedRefNonNilCast);
+  //writeln("unmanagedRef2 after cast = ", unmanagedRef2);
+
+  // casting unmanaged to unmanaged
+  var unmanagedRef3 = new unmanaged PODclass("unmanagedRef3", 93);
+  writeln("unmanagedRef3 = ", unmanagedRef3);
+  var unmanagedRefNonNilCast  = unmanagedRef3 : unmanaged;
+  writeln("unmanagedRefNonNilCast = ", unmanagedRefNonNilCast);
+  writeln("unmanagedRef3 after cast = ", unmanagedRef3);
+
+  // casting unmanaged to borrowed
+  var unmanagedRef4 = new unmanaged PODclass("unmanagedRef4", 94);
+  writeln("unmanagedRef4 = ", unmanagedRef4);
+  var borrowedRefNonNilCast   = unmanagedRef4 : borrowed;
+  writeln("borrowedRefNonNilCast = ", borrowedRefNonNilCast);
+  writeln("unmanagedRef4 after cast = ", unmanagedRef4);
+
+  // casting unmanaged to owned nilable
+  //var unmanagedRef5 = new unmanaged PODclass("unmanagedRef5", 95);
+  //writeln("unmanagedRef5 = ", unmanagedRef5);
+  // FIXME: I expected this to work
+  // error: illegal cast from unmanaged PODclass to owned PODclass?
+  //var ownedRefNilCast         = unmanagedRef5 : owned PODclass?;
+  //writeln("ownedRefNilCast = ", ownedRefNilCast);
+  //writeln("unmanagedRef5 after cast = ", unmanagedRef5);
+
+  // casting unmanaged to shared nilable
+  //var unmanagedRef6 = new unmanaged PODclass("unmanagedRef6", 96);
+  //writeln("unmanagedRef6 = ", unmanagedRef6);
+  // FIXME: I expected this to work
+  // error: illegal cast from unmanaged PODclass to shared PODclass?
+  //var sharedRefNilCast        = unmanagedRef : shared PODclass?;
+  //writeln("sharedRefNilCast = ", sharedRefNilCast);
+  //writeln("unmanagedRef6 after cast = ", unmanagedRef6);
+
+  // casting unmanaged to unmanaged nilable
+  var unmanagedRef7 = new unmanaged PODclass("unmanagedRef7", 97);
+  writeln("unmanagedRef7 = ", unmanagedRef);
+  var unmanagedRefNilCast     = unmanagedRef7 : unmanaged PODclass?;
+  writeln("unmanagedRefNilCast = ", unmanagedRefNilCast);
+  writeln("unmanagedRef7 after cast = ", unmanagedRef7);
+
+  // casting unmanaged to borrowed nilable
+  var unmanagedRef8 = new unmanaged PODclass("unmanagedRef8", 98);
+  writeln("unmanagedRef8 = ", unmanagedRef8);
+  var borrowedRefNilCast      = unmanagedRef : borrowed PODclass?;
+  writeln("borrowedRefNilCast = ", borrowedRefNilCast);
+  writeln("unmanagedRef8 after cast = ", unmanagedRef8);
+}
+
+//==== casting a borrowed reference into variables
+{ // putting in scope to reuse some var names
+
+  // casting borrowed to owned
+  //var borrowedRef1 = new borrowed PODclass("borrowedRef1", 99);
+  //writeln("borrowedRef1 = ", borrowedRef1);
+  // error: illegal cast from borrowed PODclass to owned
+  //var ownedRefNonNilCast      = borrowedRef1 : owned;
+  //writeln("ownedRefNonNilCast = ", ownedRefNonNilCast);
+  //writeln("borrowedRef1 after cast = ", borrowedRef1);
+
+  // casting borrowed to shared
+  //var borrowedRef2 = new borrowed PODclass("borrowedRef2", 100);
+  //writeln("borrowedRef2 = ", borrowedRef2);
+  // error: illegal cast from borrowed PODclass to shared
+  //var sharedRefNonNilCast     = borrowedRef2 : shared;
+  //writeln("sharedRefNonNilCast = ", sharedRefNonNilCast);
+  //writeln("borrowedRef2 after cast = ", borrowedRef2);
+
+  // casting borrowed to unmanaged
+  var borrowedRef3 = new borrowed PODclass("borrowedRef3", 101);
+  writeln("borrowedRef3 = ", borrowedRef3);
+  var unmanagedRefNonNilCast  = borrowedRef3 : unmanaged;
+  writeln("unmanagedRefNonNilCast = ", unmanagedRefNonNilCast);
+  writeln("borrowedRef3 after cast = ", borrowedRef3);
+
+  // casting borrowed to borrowed
+  var borrowedRef4 = new borrowed PODclass("borrowedRef4", 102);
+  writeln("borrowedRef4 = ", borrowedRef4);
+  var borrowedRefNonNilCast   = borrowedRef4 : borrowed;
+  writeln("borrowedRefNonNilCast = ", borrowedRefNonNilCast);
+  writeln("borrowedRef4 after cast = ", borrowedRef4);
+
+  // casting borrowed to owned nilable
+  //var borrowedRef5 = new borrowed PODclass("borrowedRef5", 103);
+  //writeln("borrowedRef5 = ", borrowedRef5);
+  // error: illegal cast from borrowed PODclass to owned PODclass?
+  //var ownedRefNilCast      = borrowedRef5 : owned PODclass?;
+  //writeln("ownedRefNilCast = ", ownedRefNilCast);
+  //writeln("borrowedRef5 after cast = ", borrowedRef5);
+
+  // casting borrowed to shared nilable
+  //var borrowedRef6 = new borrowed PODclass("borrowedRef6", 104);
+  //writeln("borrowedRef6 = ", borrowedRef6);
+  // error: illegal cast from borrowed PODclass to shared PODclass?
+  //var sharedRefNilCast     = borrowedRef6 : shared PODclass?;
+  //writeln("sharedRefNilCast = ", sharedRefNilCast);
+  //writeln("borrowedRef6 after cast = ", borrowedRef6);
+
+  // casting borrowed to unmanaged nilable
+  var borrowedRef7 = new borrowed PODclass("borrowedRef7", 105);
+  writeln("borrowedRef7 = ", borrowedRef7);
+  var unmanagedRefNilCast  = borrowedRef7 : unmanaged PODclass?;
+  writeln("unmanagedRefNilCast = ", unmanagedRefNilCast);
+  writeln("borrowedRef7 after cast = ", borrowedRef7);
+
+  // casting borrowed to borrowed nilable
+  var borrowedRef8 = new borrowed PODclass("borrowedRef8", 106);
+  writeln("borrowedRef8 = ", borrowedRef8);
+  var borrowedRefNilCast   = borrowedRef8 : borrowed PODclass?;
+  writeln("borrowedRefNilCast = ", borrowedRefNilCast);
+  writeln("borrowedRef8 after cast = ", borrowedRef8);
+}
+
+//=======================
+//==== all of the above casting but now from nilable refs
+
+{ // putting into a scope to avoid problem of not being able to transfer 
+  // ownership from an outer variable
+
+  var defaultRef1 = new PODclass?("defaultRef1", 107);
+  writeln("defaultRef1 = ", defaultRef1);
+  var ownedRefNonNilCast      = defaultRef1 : owned;
+  writeln("ownedRefNonNilCast = ", ownedRefNonNilCast);
+  writeln("defaultRef1 after cast = ", defaultRef1);
+
+  var sharedRefNonNilCast     = defaultRef1 : shared;
+
+  var defaultRef2 = new PODclass?("defaultRef2", 108);
+  writeln("defaultRef2 = ", defaultRef2);
+  var unmanagedRefNonNilCast  = defaultRef2 : unmanaged;
+  writeln("unmanagedRefNonNilCast = ", unmanagedRefNonNilCast);
+  // FIXME: should defaultRef2 lose ownership?
+  writeln("defaultRef2 after cast = ", defaultRef2);
+
+  var defaultRef3 = new PODclass?("defaultRef3", 109);
+  writeln("defaultRef3 = ", defaultRef3);
+  var borrowedRefNonNilCast   = defaultRef3 : borrowed;
+  writeln("borrowedRefNonNilCast = ", borrowedRefNonNilCast);
+  writeln("defaultRef3 after cast = ", defaultRef3);
+
+  var defaultRef4 = new PODclass?("defaultRef4", 110);
+  writeln("defaultRef4 = ", defaultRef4);
+  var ownedRefNilCast         = defaultRef4 : owned PODclass?;
+  writeln("ownedRefNilCast = ", ownedRefNilCast);
+  writeln("defaultRef4 after cast = ", defaultRef4);
+
+  var sharedRefNilCast        = defaultRef4 : shared PODclass?;
+
+  var defaultRef5 = new PODclass?("defaultRef5", 111);
+  writeln("defaultRef5 = ", defaultRef5);
+  var unmanagedRefNilCast     = defaultRef5 : unmanaged PODclass?;
+  writeln("unmanagedRefNilCast = ", unmanagedRefNilCast);
+  writeln("defaultRef5 after cast = ", defaultRef5);
+
+  var defaultRef6 = new PODclass?("defaultRef6", 112);
+  writeln("defaultRef6 = ", defaultRef6);
+  var borrowedRefNilCast      = defaultRef6 : borrowed PODclass?;
+  writeln("borrowedRefNilCast = ", borrowedRefNilCast);
+  writeln("defaultRef6 after cast = ", defaultRef6);
+}
+//==== casting a shared reference into variables
+{ // putting in scope to reuse some var names
+
+  // casting shared to own
+  //var sharedRef1 = new shared PODclass?("sharedRef1", 113);
+  //writeln("sharedRef1 = ", sharedRef1);
+  // error: illegal cast from shared PODclass? to owned
+  //var ownedRefNonNilCast      = sharedRef1 : owned;
+  //writeln("ownedRefNonNilCast = ", ownedRefNonNilCast);
+  //writeln("sharedRef1 after cast = ", sharedRef1);
+
+  // casting shared to shared
+  var sharedRef2 = new shared PODclass?("sharedRef2", 114);
+  writeln("sharedRef2 = ", sharedRef2);
+  var sharedRefNonNilCast     = sharedRef2 : shared;
+  writeln("sharedRefNonNilCast = ", sharedRefNonNilCast);
+  writeln("sharedRef2 after cast = ", sharedRef2);
+
+  var sharedRef3 = new shared PODclass?("sharedRef3", 115);
+  writeln("sharedRef3 = ", sharedRef3);
+  var unmanagedRefNonNilCast  = sharedRef3 : unmanaged;
+  writeln("unmanagedRefNonNilCast = ", unmanagedRefNonNilCast);
+  writeln("sharedRef3 after cast = ", sharedRef3);
+
+  var sharedRef4 = new shared PODclass?("sharedRef4", 116);
+  writeln("sharedRef4 = ", sharedRef4);
+  var borrowedRefNonNilCast   = sharedRef4 : borrowed;
+  writeln("borrowedRefNonNilCast = ", borrowedRefNonNilCast);
+  writeln("sharedRef4 after cast = ", sharedRef4);
+
+  //var sharedRef5 = new shared PODclass?("sharedRef5", 117);
+  //writeln("sharedRef5 = ", sharedRef5);
+  // error: illegal cast from shared PODclass? to owned PODclass?
+  //var ownedRefNilCast         = sharedRef5 : owned PODclass?;
+  //writeln("ownedRefNilCast = ", ownedRefNilCast);
+  //writeln("sharedRef5 after cast = ", sharedRef5);
+
+  var sharedRef6 = new shared PODclass?("sharedRef6", 118);
+  writeln("sharedRef6 = ", sharedRef6);
+  var sharedRefNilCast        = sharedRef6 : shared PODclass?;
+  writeln("sharedRefNilCast = ", sharedRefNilCast);
+  writeln("sharedRef6 after cast = ", sharedRef6);
+
+  var sharedRef7 = new shared PODclass?("sharedRef7", 119);
+  writeln("sharedRef7 = ", sharedRef7);
+  var unmanagedRefNilCast     = sharedRef7 : unmanaged PODclass?;
+  writeln("unmanagedRefNilCast = ", unmanagedRefNilCast);
+  writeln("sharedRef7 after cast = ", sharedRef7);
+
+  var sharedRef8 = new shared PODclass?("sharedRef8", 120);
+  writeln("sharedRef8 = ", sharedRef8);
+  var borrowedRefNilCast      = sharedRef8 : borrowed PODclass?;
+  writeln("borrowedRefNilCast = ", borrowedRefNilCast);
+  writeln("sharedRef8 after cast = ", sharedRef8);
+}
+//==== casting an unmanaged reference into variables
+{ // putting in scope to reuse some var names
+
+  // casting unmanaged to owned
+  //var unmanagedRef1 = new unmanaged PODclass?("unmanagedRef1", 121);
+  //writeln("unmanagedRef1 = ", unmanagedRef1);
+  // error: illegal cast from unmanaged PODclass? to owned
+  //var ownedRefNonNilCast      = unmanagedRef1 : owned;
+  //writeln("ownedRefNonNilCast = ", ownedRefNonNilCast);
+  //writeln("unmanagedRef1 after cast = ", unmanagedRef1);
+
+  // casting unmanaged to shared
+  //var unmanagedRef2 = new unmanaged PODclass?("unmanagedRef2", 122);
+  //writeln("unmanagedRef2 = ", unmanagedRef2);
+  // error: illegal cast from unmanaged PODclass? to shared
+  //var sharedRefNonNilCast     = unmanagedRef2 : shared;
+  //writeln("sharedRefNonNilCast = ", sharedRefNonNilCast);
+  //writeln("unmanagedRef2 after cast = ", unmanagedRef2);
+
+  // casting unmanaged to unmanaged
+  var unmanagedRef3 = new unmanaged PODclass?("unmanagedRef3", 123);
+  writeln("unmanagedRef3 = ", unmanagedRef3);
+  var unmanagedRefNonNilCast  = unmanagedRef3 : unmanaged;
+  writeln("unmanagedRefNonNilCast = ", unmanagedRefNonNilCast);
+  writeln("unmanagedRef3 after cast = ", unmanagedRef3);
+
+  // casting unmanaged to borrowed
+  var unmanagedRef4 = new unmanaged PODclass?("unmanagedRef4", 124);
+  writeln("unmanagedRef4 = ", unmanagedRef4);
+  var borrowedRefNonNilCast   = unmanagedRef4 : borrowed;
+  writeln("borrowedRefNonNilCast = ", borrowedRefNonNilCast);
+  writeln("unmanagedRef4 after cast = ", unmanagedRef4);
+
+  // casting unmanaged to owned nilable
+  //var unmanagedRef5 = new unmanaged PODclass?("unmanagedRef5", 125);
+  //writeln("unmanagedRef5 = ", unmanagedRef5);
+  // error: illegal cast from unmanaged PODclass? to owned PODclass?
+  //var ownedRefNilCast         = unmanagedRef5 : owned PODclass?;
+  //writeln("ownedRefNilCast = ", ownedRefNilCast);
+  //writeln("unmanagedRef5 after cast = ", unmanagedRef5);
+
+  // casting unmanaged to shared nilable
+  //var unmanagedRef6 = new unmanaged PODclass?("unmanagedRef6", 126);
+  //writeln("unmanagedRef6 = ", unmanagedRef6);
+  // error: illegal cast from unmanaged PODclass to shared PODclass?
+  //var sharedRefNilCast        = unmanagedRef : shared PODclass?;
+  //writeln("sharedRefNilCast = ", sharedRefNilCast);
+  //writeln("unmanagedRef6 after cast = ", unmanagedRef6);
+
+  // casting unmanaged to unmanaged nilable
+  var unmanagedRef7 = new unmanaged PODclass?("unmanagedRef7", 127);
+  writeln("unmanagedRef7 = ", unmanagedRef);
+  var unmanagedRefNilCast     = unmanagedRef7 : unmanaged PODclass?;
+  writeln("unmanagedRefNilCast = ", unmanagedRefNilCast);
+  writeln("unmanagedRef7 after cast = ", unmanagedRef7);
+
+  // casting unmanaged to borrowed nilable
+  var unmanagedRef8 = new unmanaged PODclass?("unmanagedRef8", 128);
+  writeln("unmanagedRef8 = ", unmanagedRef8);
+  var borrowedRefNilCast      = unmanagedRef : borrowed PODclass?;
+  writeln("borrowedRefNilCast = ", borrowedRefNilCast);
+  writeln("unmanagedRef8 after cast = ", unmanagedRef8);
+}
+
+//==== casting a borrowed reference into variables
+{ // putting in scope to reuse some var names
+
+  // casting borrowed to owned
+  //var borrowedRef1 = new borrowed PODclass?("borrowedRef1", 129);
+  //writeln("borrowedRef1 = ", borrowedRef1);
+  // error: illegal cast from borrowed PODclass? to owned
+  //var ownedRefNonNilCast      = borrowedRef1 : owned;
+  //writeln("ownedRefNonNilCast = ", ownedRefNonNilCast);
+  //writeln("borrowedRef1 after cast = ", borrowedRef1);
+
+  // casting borrowed to shared
+  //var borrowedRef2 = new borrowed PODclass?("borrowedRef2", 130);
+  //writeln("borrowedRef2 = ", borrowedRef2);
+  // error: illegal cast from borrowed PODclass? to shared
+  //var sharedRefNonNilCast     = borrowedRef2 : shared;
+  //writeln("sharedRefNonNilCast = ", sharedRefNonNilCast);
+  //writeln("borrowedRef2 after cast = ", borrowedRef2);
+
+  // casting borrowed to unmanaged
+  var borrowedRef3 = new borrowed PODclass?("borrowedRef3", 131);
+  writeln("borrowedRef3 = ", borrowedRef3);
+  var unmanagedRefNonNilCast  = borrowedRef3 : unmanaged;
+  writeln("unmanagedRefNonNilCast = ", unmanagedRefNonNilCast);
+  writeln("borrowedRef3 after cast = ", borrowedRef3);
+
+  // casting borrowed to borrowed
+  var borrowedRef4 = new borrowed PODclass?("borrowedRef4", 132);
+  writeln("borrowedRef4 = ", borrowedRef4);
+  var borrowedRefNonNilCast   = borrowedRef4 : borrowed;
+  writeln("borrowedRefNonNilCast = ", borrowedRefNonNilCast);
+  writeln("borrowedRef4 after cast = ", borrowedRef4);
+
+  // casting borrowed to owned nilable
+  //var borrowedRef5 = new borrowed PODclass?("borrowedRef5", 133);
+  //writeln("borrowedRef5 = ", borrowedRef5);
+  // error: illegal cast from borrowed PODclass? to owned PODclass?
+  //var ownedRefNilCast      = borrowedRef5 : owned PODclass?;
+  //writeln("ownedRefNilCast = ", ownedRefNilCast);
+  //writeln("borrowedRef5 after cast = ", borrowedRef5);
+
+  // casting borrowed to shared nilable
+  //var borrowedRef6 = new borrowed PODclass?("borrowedRef6", 134);
+  //writeln("borrowedRef6 = ", borrowedRef6);
+  // 939: error: illegal cast from borrowed PODclass? to shared PODclass?
+  //var sharedRefNilCast     = borrowedRef6 : shared PODclass?;
+  //writeln("sharedRefNilCast = ", sharedRefNilCast);
+  //writeln("borrowedRef6 after cast = ", borrowedRef6);
+
+  // casting borrowed to unmanaged nilable
+  var borrowedRef7 = new borrowed PODclass?("borrowedRef7", 135);
+  writeln("borrowedRef7 = ", borrowedRef7);
+  var unmanagedRefNilCast  = borrowedRef7 : unmanaged PODclass?;
+  writeln("unmanagedRefNilCast = ", unmanagedRefNilCast);
+  writeln("borrowedRef7 after cast = ", borrowedRef7);
+
+  // casting borrowed to borrowed nilable
+  var borrowedRef8 = new borrowed PODclass?("borrowedRef8", 136);
+  writeln("borrowedRef8 = ", borrowedRef8);
+  var borrowedRefNilCast   = borrowedRef8 : borrowed PODclass?;
+  writeln("borrowedRefNilCast = ", borrowedRefNilCast);
+  writeln("borrowedRef8 after cast = ", borrowedRef8);
+}
+
 //==== What kind of reference can be coerced to what other kind of reference.
 // Non-nilable class types are implicitly convertible to nilable class types. 
 // https://chapel-lang.org/docs/main/language/spec/conversions.html#implicit-class-conversions
+
+proc f1(arg: owned PODclass) { writeln("owned arg=", arg); }
+proc f2(arg: shared PODclass) { writeln("shared arg=", arg); }
+proc f3(arg: unmanaged PODclass) { writeln("unmanaged arg=", arg); }
+proc f4(arg: borrowed PODclass) { writeln("borrowed arg=", arg); }
+
+proc f5(arg: owned PODclass?) { writeln("ownednil arg=", arg); }
+proc f6(arg: shared PODclass?) { writeln("sharednil arg=", arg); }
+proc f7(arg: unmanaged PODclass?) { writeln("unmanagednil arg=", arg); }
+proc f8(arg: borrowed PODclass?) { writeln("borrowednil arg=", arg); }
+
+// based on documentation "class types can be converted to the 
+// corresponding borrowed type"
+f4(new owned PODclass("newOwnedExpr", 137));
+f8(new owned PODclass?("newOwnedNilExpr", 138));
+f4(new shared PODclass("newSharedExpr", 139));
+f8(new shared PODclass?("newSharedNilExpr", 140));
+
+// In assignments could assign an owned ref to a shared, coercions too?
+// Ok docs are consistent.
+// error: unresolved call 'f6(owned PODclass)'
+// note: this candidate did not match: f6(arg: shared PODclass?)
+// note: because actual argument #1 with type 'owned PODclass'
+// note: is passed to formal 'arg: shared PODclass?'
+//f6(new owned PODclass("newOwnedExpr", 103));
+
+// just checking that can't coerce to or from an unmanaged
+// error: unresolved call 'f1(unmanaged PODclass)'
+// .. similar notes to above
+//f1(new unmanaged PODclass("newUnmanagedExpr", 103));
+// error: unresolved call 'f7(owned PODclass?)'
+//f7(new owned PODclass?("newOwnedNilExpr", 104));
 
 
 //---- can I do an example to illustrate this?
