@@ -26,9 +26,9 @@
 // ``string``s, ``range``s, ``domain``s, and ``array``s, which are all datatypes 
 // built-in to Chapel.  ``Records`` are also managed in that they are allocated 
 // and deallocated at the beginning and end of the scope they are declared in.  
-// Also the field values in a ``record`` are copied around when they are passed 
-// in and out of a function call.  However, ``record``s differ from primitive and 
-// built-in datatypes in that ``record``s can have user-defined initializers 
+// Also the field values in a ``record`` has copy-by-value semantics when they 
+// are passed into a function call.  However, ``record``s differ from primitive 
+// and built-in datatypes in that ``record``s can have user-defined initializers 
 // and deinitializers. A user-defined initializer for a ``record`` is called 
 // by using a ``new`` expression. This might confuse a C++ programmer into 
 // thinking that records DO need explicit programmer memory management, but 
@@ -169,6 +169,7 @@ writeln("borrowedNullPtr = ", borrowedNullPtr);
 
 // FIXME: this should work but doesn't, shouldn't owned be the default?
 // get error: cannot default-initialize a variable with generic type
+// The default is generic management, but is that really what we want?
 //var nullPtr : PODclass?;
 //writeln("nullPtr = ", nullPtr);
 
@@ -238,6 +239,10 @@ writeln("newDefaultInit = ", newDefaultInit);
 
 // error: Cannot assign to owned PODclass from unmanaged PODclass
 //newDefaultInit = new unmanaged PODclass("newUnmanagedExpr", 24);
+// neither of the below work
+// cannot initialize 'owned PODclass' from a 'unmanaged PODclass'
+//var globalOwned1 : owned PODclass = new unmanaged PODclass("newUnmanagedExpr", 24);
+//var globalOwned2 : owned PODclass = newUnmanagedRef;
 
 // error: Cannot assign to owned PODclass from borrowed PODclass
 //newDefaultInit = new borrowed PODclass("newBorrowedExpr", 25);
@@ -310,7 +315,7 @@ tempBorrowedRef = newUnmanagedRef;
 writeln("tempBorrowedRef = ", tempBorrowedRef);
 
 // error: Scoped variable newBorrowedRef would outlive the value it is set to
-// FIXME: huh?
+// FIXME: huh?  think this happens because globals have an infinite runtime
 //newBorrowedRef = newBorrowedRef;
 tempBorrowedRef = newBorrowedRef;
 writeln("tempBorrowedRef = ", tempBorrowedRef);
