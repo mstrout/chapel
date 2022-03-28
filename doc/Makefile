@@ -59,14 +59,14 @@ help-source:
 
 docs: FORCE
 	@COMP_DOCS_ERROR=0 ; \
-	(cd ../compiler/next && $(MAKE) -f Makefile.help libchplcomp-docs) || \
+	(cd ../compiler/dyno && $(MAKE) -f Makefile.help dyno-docs) || \
 	 COMP_DOCS_ERROR=1 ; \
 	$(MAKE) html-release && \
 	if [ $$COMP_DOCS_ERROR -ne 0 -o ! -d $(COMPILER_INTERNALS_DOXYGEN) ] ; \
 	  then \
 	  echo ; \
 	  echo " This docs build does not include compiler library API docs" ; \
-	  echo " Try 'make clobber-libchplcomp && make libchplcomp-docs'" ; \
+	  echo " Try 'make clobber-dyno && make dyno-docs'" ; \
 	fi
 
 
@@ -143,10 +143,8 @@ checkdocs: FORCE
 
 prunedocs: FORCE
 	rm -f html/_downloads/quickReference.pdf
-	rm -f html/_downloads/chapelLanguageSpec.pdf
 	if [ -d "html" ]; then \
 	ln -s ../../$(SOURCEDIR)/language/quickReference.pdf html/_downloads/quickReference.pdf; \
-	ln -s ../../$(SOURCEDIR)/language/chapelLanguageSpec.pdf html/_downloads/chapelLanguageSpec.pdf; \
 	fi
 
 
@@ -193,7 +191,7 @@ clean-symlinks: FORCE
 	find $(SOURCEDIR) -type l -delete
 
 clean-doxygen: FORCE
-	cd ../compiler/next && $(MAKE) -f Makefile.help clean-libchplcomp-docs
+	cd ../compiler/dyno && $(MAKE) -f Makefile.help clean-dyno-docs
 
 FORCE:
 

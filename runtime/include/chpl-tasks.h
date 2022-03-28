@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -351,21 +351,6 @@ size_t chpl_task_getCallStackSize(void);
 //
 chpl_bool chpl_task_guardPagesInUse(void);
 
-//
-// returns the number of tasks that are ready to run on the current locale,
-// not including any that have already started running.
-//
-uint32_t chpl_task_getNumQueuedTasks(void);
-
-//
-// returns the number of tasks that are blocked waiting on a sync or single
-// variable.
-// Note that this information may only available if the program is run with
-// the -b switch, which enables block reporting and deadlock detection.
-// If this switch is not specified, -1 may be returned.
-//
-int32_t chpl_task_getNumBlockedTasks(void);
-
 
 // Threads
 
@@ -414,16 +399,9 @@ uint32_t chpl_task_canMigrateThreads(void) {
 }
 
 //
-// returns the total number of threads that currently exist, whether running,
-// blocked, or idle
+// Warn about a num threads setting
 //
-uint32_t chpl_task_getNumThreads(void);
-
-//
-// returns the number of threads that are currently idle
-//
-uint32_t chpl_task_getNumIdleThreads(void);
-
+void chpl_task_warnNumThreadsPerLocale(const char*);
 
 //
 // This gets any per-locale thread count specified in the environment.

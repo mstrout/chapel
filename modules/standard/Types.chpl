@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -225,13 +225,13 @@ proc isComplexValue(e)   param  return isComplexType(e.type);
 proc isStringValue(e)    param  return isStringType(e.type);
 /* Returns `true` if the argument is a `bytes` value. */
 proc isBytesValue(e)     param  return isBytesType(e.type);
-/* Returns `true` if the argument is a value of one the following types: 
+/* Returns `true` if the argument is a value of one the following types:
 `int`, `uint`. */
 proc isIntegralValue(e)  param  return isIntegralType(e.type);
-/* Returns `true` if the argument is a value of one the following types: 
+/* Returns `true` if the argument is a value of one the following types:
 `real`, `imag`. */
 proc isFloatValue(e)     param  return isFloatType(e.type);
-/* Returns `true` if the argument is a value of one the following types: 
+/* Returns `true` if the argument is a value of one the following types:
 `int`, `uint`, `real`, `imag`, `complex`. */
 proc isNumericValue(e)   param  return isNumericType(e.type);
 /* Returns `true` if the argument is a value of primitive type. */
@@ -722,6 +722,11 @@ proc min(type t) where isComplexType(t) {
   return (min(real(floatwidth)), min(real(floatwidth))): t;
 }
 
+pragma "last resort" pragma "no doc"
+proc min(type t) {
+  compilerError("'min(type t)' is not defined for t=", t:string);
+}
+
 // joint documentation, for user convenience
 /*
 Returns the maximum value the type `t` can store.
@@ -758,6 +763,11 @@ pragma "no doc"
 proc max(type t) where isComplexType(t) {
   param floatwidth = numBits(t) / 2;
   return (max(real(floatwidth)), max(real(floatwidth))): t;
+}
+
+pragma "last resort" pragma "no doc"
+proc max(type t) {
+  compilerError("'max(type t)' is not defined for t=", t:string);
 }
 
 pragma "no doc"
@@ -904,7 +914,8 @@ inline proc _bxor_id(type t) return 0:t;
 // and only used for chpldoc.
 
 /* Returns `true` if the type `from` is coercible to the type `to`,
-   or if ``isSubtype(from, to)`` would return `true`.
+   or if ``isSubtype(from, to)`` would return `true`. See
+   :ref:`Implicit_Conversion_Call`.
  */
 pragma "docs only"
 proc isCoercible(type from, type to) param {
@@ -912,11 +923,15 @@ proc isCoercible(type from, type to) param {
 }
 
 /* Returns `true` if the type `sub` is a subtype of the type `super`.
+   See also :ref:`Subtype`.
+
    In particular, returns `true` in any of these cases:
 
      * `sub` is the same type as `super`
      * `sub` is an instantiation of a generic type `super`
      * `sub` is a class type inheriting from `super`
+     * `sub` is non-nilable class type and `super` is the nilable version of the
+       same class type
 
    Note that ``isSubtype(a,b)`` can also be written as
    ``a <= b`` or ``b >= a``.

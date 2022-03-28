@@ -2,6 +2,14 @@ x means reached end of life
 - means end of life soon
   (last updated: 2019-01-11)
 
+Alpine Linux
+  3.14  2023-05-01
+  3.15  2023-11-01
+
+Amazon Linux
+  2    EOL June 30, 2023
+  2022
+
 CentOS -- see https://wiki.centos.org/About/Product
        -- and https://app.vagrantup.com/centos/
 x 5 full updates until Jan 2014, maintenance until Mar 2017
@@ -13,9 +21,11 @@ x 6 full updates until May 2017, maintenance until Nov 2020
     7.4  released Sep 2017
     7.5  released May 2018
     7.6  released Dec 2018
-    # note -- gcc 9 is available with devtoolset-9 
+    # note -- gcc 11 is available with devtoolset-11
       https://stackoverflow.com/questions/36327805/how-to-install-gcc-5-3-with-yum-on-centos-7-2/37355018
-  8 full updates until May 2024, maintenance until May 2029
+  8 not-stream - EOL 2021-12-31
+  8 stream - EOL May 2024
+  8 stream - estimated EOL 2027
 
 
 Debian -- see https://wiki.debian.org/DebianReleases
@@ -41,8 +51,9 @@ x 29 EOL Nov 2019
 x 30 EOL May 2020
 x 31 EOL Nov 2020
 x 32 EOL May 2021
-  33
+  33 EOL Nov 2021
   34
+  35
 
 FreeBSD -- see https://www.freebsd.org/security/unsupported.html
         -- and https://app.vagrantup.com/freebsd
@@ -55,7 +66,7 @@ x 11.2 EOL Oct 2019
 x 11.4 EOL Sep 2021
 x 12.0 EOL Feb 2020
 x 12.1 EOL Jan 2021
-  12.2
+  12.2 EOL Mar 2022
   12.3
   13.0 EOL Jan 2026
 
@@ -79,7 +90,7 @@ x 12.04 "Precise Pangolin"  LTS until Apr 2017
 x 14.04 "Trusty Tahir"      LTS until Apr 2019
 x 16.04 "Xenial Xerus"      LTS until Apr 2021
   18.04 "Bionic Beaver"     LTS until April 2023
-  20.04 "Foral Fossa"       LTS until April 2030
+  20.04 "Focal Fossa"       LTS until April 2030
 
 non-LTS:
 x 14.10 "Utopic Unicorn"    EOL July 2015
@@ -92,5 +103,5 @@ x 18.10 "Cosmic Cuttlefish" EOL July 2019
 x 19.04 "Disco Dingo"       EOL Jan 2020
 x 19.10 "Eoan Ermine"       EOL July 2020
 x 20.10 "Groovy Gorilla"    EOL July 2021
-  21.04 "Hirsute Hippo"     EOL January 2022
+x 21.04 "Hirsute Hippo"     EOL January 2022
   21.10 "Impish Indri"      EOL July 2022

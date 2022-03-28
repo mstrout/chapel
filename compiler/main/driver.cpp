@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -107,8 +107,11 @@ const char* CHPL_SYS_MODULES_SUBDIR = NULL;
 const char* CHPL_LLVM_UNIQ_CFG_PATH = NULL;
 const char* CHPL_LLVM_CLANG_C = NULL;
 const char* CHPL_LLVM_CLANG_CXX = NULL;
-const char* CHPL_LLVM_CLANG_COMPILE_ARGS = NULL;
-const char* CHPL_LLVM_CLANG_LINK_ARGS = NULL;
+
+const char* CHPL_TARGET_BUNDLED_COMPILE_ARGS = NULL;
+const char* CHPL_TARGET_SYSTEM_COMPILE_ARGS = NULL;
+const char* CHPL_TARGET_BUNDLED_LINK_ARGS = NULL;
+const char* CHPL_TARGET_SYSTEM_LINK_ARGS = NULL;
 
 static char libraryFilename[FILENAME_MAX] = "";
 static char incFilename[FILENAME_MAX] = "";
@@ -198,6 +201,7 @@ bool fNoOptimizeOnClauses = false;
 bool fNoRemoveEmptyRecords = true;
 bool fRemoveUnreachableBlocks = true;
 bool fMinimalModules = false;
+int fParMake = 0;
 bool fIncrementalCompilation = false;
 bool fNoOptimizeForallUnordered = false;
 
@@ -296,7 +300,9 @@ bool fPrintAdditionalErrors;
 static
 bool fPrintChplSettings = false;
 
-bool fCompilerLibraryParser = false;
+bool fDynoCompilerLibrary = false;
+bool fDynoDebugTrace = false;
+size_t fDynoBreakOnHash = 0;
 
 int fGPUBlockSize = 0;
 char fCUDAArch[16] = "sm_60";
@@ -933,6 +939,11 @@ static void setPythonAndLibmode(const ArgumentDescription* desc,
   fLibraryPython = true;
 }
 
+static void turnIncrementalOn(const ArgumentDescription* desc,
+                              const char* unused) {
+  fIncrementalCompilation = true;
+}
+
 /*
 Flag types:
 
@@ -945,6 +956,7 @@ Flag types:
   + = increment
   T = toggle
   L = int64 (long)
+  U = unsigned long
   N = --no-... flag, --no version sets to false
   n = --no-... flag, --no version sets to true
 
@@ -1185,6 +1197,7 @@ static ArgumentDescription arg_desc[] = {
  {"replace-array-accesses-with-ref-temps", ' ', NULL, "Enable [disable] replacing array accesses with reference temps (experimental)", "N", &fReplaceArrayAccessesWithRefTemps, NULL, NULL },
  {"incremental", ' ', NULL, "Enable [disable] using incremental compilation", "N", &fIncrementalCompilation, "CHPL_INCREMENTAL_COMP", NULL},
  {"minimal-modules", ' ', NULL, "Enable [disable] using minimal modules",               "N", &fMinimalModules, "CHPL_MINIMAL_MODULES", NULL},
+ {"parallel-make", 'j', NULL, "Specify degree of parallelism for C back-end", "I", &fParMake, "CHPL_PAR_MAKE", &turnIncrementalOn},
  {"print-chpl-settings", ' ', NULL, "Print current chapel settings and exit", "F", &fPrintChplSettings, NULL,NULL},
  {"print-additional-errors", ' ', NULL, "Print additional errors", "F", &fPrintAdditionalErrors, NULL,NULL},
  {"stop-after-pass", ' ', "<passname>", "Stop compilation after reaching this pass", "S128", &stopAfterPass, "CHPL_STOP_AFTER_PASS", NULL},
@@ -1194,7 +1207,10 @@ static ArgumentDescription arg_desc[] = {
  {"warn-tuple-iteration", ' ', NULL, "Enable [disable] warnings for tuple iteration", "n", &fNoWarnTupleIteration, "CHPL_WARN_TUPLE_ITERATION", setWarnTupleIteration},
  {"warn-special", ' ', NULL, "Enable [disable] special warnings", "n", &fNoWarnSpecial, "CHPL_WARN_SPECIAL", setWarnSpecial},
 
- {"compiler-library-parser", ' ', NULL, "Enable [disable] using compiler library parser", "N", &fCompilerLibraryParser, "CHPL_COMPILER_LIBRARY_PARSER", NULL},
+ {"dyno", ' ', NULL, "Enable [disable] using dyno compiler library", "N", &fDynoCompilerLibrary, "CHPL_DYNO_COMPILER_LIBRARY", NULL},
+ {"dyno-debug-trace", ' ', NULL, "Enable [disable] debug-trace output when using dyno compiler library", "N", &fDynoDebugTrace, "CHPL_DYNO_DEBUG_TRACE", NULL},
+ {"dyno-break-on-hash", ' ' , NULL, "Break when query with given hash value is executed when using dyno compiler library", "U", &fDynoBreakOnHash, "CHPL_DYNO_BREAK_ON_HASH", NULL},
+
 
  DRIVER_ARG_PRINT_CHPL_HOME,
  DRIVER_ARG_LAST
@@ -1320,7 +1336,14 @@ bool useDefaultEnv(std::string key) {
   }
 
   // Always use default env for internal variables that could include spaces
-  if (key == "CHPL_THIRD_PARTY_LINK_ARGS") {
+  if (key == "CHPL_HOST_BUNDLED_COMPILE_ARGS" ||
+      key == "CHPL_HOST_SYSTEM_COMPILE_ARGS" ||
+      key == "CHPL_HOST_BUNDLED_LINK_ARGS" ||
+      key == "CHPL_HOST_SYSTEM_LINK_ARGS" ||
+      key == "CHPL_TARGET_BUNDLED_COMPILE_ARGS" ||
+      key == "CHPL_TARGET_SYSTEM_COMPILE_ARGS" ||
+      key == "CHPL_TARGET_BUNDLED_LINK_ARGS" ||
+      key == "CHPL_TARGET_SYSTEM_LINK_ARGS") {
     return true;
   }
 
@@ -1413,8 +1436,11 @@ static void setChapelEnvs() {
   CHPL_LLVM_UNIQ_CFG_PATH = envMap["CHPL_LLVM_UNIQ_CFG_PATH"];
   CHPL_LLVM_CLANG_C = envMap["CHPL_LLVM_CLANG_C"];
   CHPL_LLVM_CLANG_CXX = envMap["CHPL_LLVM_CLANG_CXX"];
-  CHPL_LLVM_CLANG_COMPILE_ARGS = envMap["CHPL_LLVM_CLANG_COMPILE_ARGS"];
-  CHPL_LLVM_CLANG_LINK_ARGS = envMap["CHPL_LLVM_CLANG_LINK_ARGS"];
+
+  CHPL_TARGET_BUNDLED_COMPILE_ARGS = envMap["CHPL_TARGET_BUNDLED_COMPILE_ARGS"];
+  CHPL_TARGET_SYSTEM_COMPILE_ARGS = envMap["CHPL_TARGET_SYSTEM_COMPILE_ARGS"];
+  CHPL_TARGET_BUNDLED_LINK_ARGS = envMap["CHPL_TARGET_BUNDLED_LINK_ARGS"];
+  CHPL_TARGET_SYSTEM_LINK_ARGS = envMap["CHPL_TARGET_SYSTEM_LINK_ARGS"];
 
   // Make sure there are no NULLs in envMap
   // a NULL in envMap might mean that one of the variables
@@ -1537,15 +1563,22 @@ static void setGPUFlags() {
 
 static void checkLLVMCodeGen() {
 #ifdef HAVE_LLVM
-  // LLVM does not currently work on 32-bit x86
-  bool unsupportedLlvmConfiguration = (0 == strcmp(CHPL_TARGET_ARCH, "i686"));
-  if (fLlvmCodegen && unsupportedLlvmConfiguration)
-    USR_FATAL("CHPL_TARGET_COMPILER=llvm not yet supported for this architecture");
+  if (fLlvmCodegen) {
+    // LLVM does not currently work on 32-bit x86
+    bool unsupportedLlvmConfiguration = (0 == strcmp(CHPL_TARGET_ARCH, "i686"));
+    if (unsupportedLlvmConfiguration) {
+      USR_FATAL("CHPL_TARGET_COMPILER=llvm not yet supported for this architecture");
+    }
+
+    if (fIncrementalCompilation)
+      USR_FATAL("Incremental compilation is not yet supported with LLVM");
+  }
 
   if (0 == strcmp(CHPL_LLVM, "none")) {
     if (fLlvmCodegen)
       USR_FATAL("CHPL_TARGET_COMPILER=llvm not supported when CHPL_LLVM=none");
   }
+
 #else
   // compiler wasn't built with LLVM, so if LLVM is enabled, error
   if (fLlvmCodegen)
@@ -1567,9 +1600,9 @@ static void checkIncrementalAndOptimized() {
   std::size_t optimizationsEnabled = ccflags.find("-O");
   if(fIncrementalCompilation && ( optimizeCCode ||
       optimizationsEnabled!=std::string::npos ))
-    USR_WARN("Compiling with --incremental along with optimizations enabled"
-              " may lead to a slower execution time compared to --fast or"
-              " using -O optimizations directly.");
+    USR_WARN("Compiling with '--incremental' or '--parallel-make' with "
+             "optimizations enabled may lead to a slower execution time "
+             "due to the use of separate compilation in the back-end.");
 }
 
 static void checkUnsupportedConfigs(void) {
@@ -1581,6 +1614,47 @@ static void checkUnsupportedConfigs(void) {
                  " Please notify the Chapel team if this configuration is"
                  " important to you.");
     }
+  }
+}
+
+static void checkRuntimeBuilt(void) {
+  // no need for a runtime to be built for chpldoc,
+  // or if we stop before codegen with --stop-after-pass or --no-codegen
+  bool stopBeforeCodegen = false;
+  if (stopAfterPass[0] != '\0') {
+    if (0 == strcmp(stopAfterPass, "codegen") ||
+        0 == strcmp(stopAfterPass, "makeBinary")) {
+      // it doesn't stop before codegen - codegen will run, might need hdrs
+      stopBeforeCodegen = false;
+    } else {
+      // stop before codegen
+      stopBeforeCodegen = true;
+    }
+  }
+  if (fDocs || no_codegen || stopBeforeCodegen) {
+    return;
+  }
+
+  std::string runtime_dir(CHPL_RUNTIME_LIB);
+  runtime_dir += "/";
+  runtime_dir += CHPL_RUNTIME_SUBDIR;
+
+  if (!isDirectory(runtime_dir.c_str())) {
+    const char* module_home = getenv("CHPL_MODULE_HOME");
+    if (module_home) {
+      USR_FATAL("The requested configuration is not included in the module. "
+                "Please send the package maintainer the output of "
+                "$CHPL_HOME/util/printchplenv and request support for this "
+                "configuration.");
+    } else {
+      USR_FATAL_CONT("The runtime has not been built for this configuration. "
+                     "Run $CHPL_HOME/util/chplenv/printchplbuilds.py for information "
+                     "on available runtimes.");
+    }
+    if (developer) {
+      USR_PRINT("Expected runtime library in %s", runtime_dir.c_str());
+    }
+    USR_STOP();
   }
 }
 
@@ -1671,6 +1745,13 @@ static void postprocess_args() {
 // errors rather than doing what the user said (for which these
 // checks don't apply because we're not going to compile anything).
 //
+// NOTE: Before adding something here consider whether you should instead add
+// it to printchplenv.py (or one of its associated chplenv scripts).  If
+// placed there then you'll get the check both at runtime (because we end up
+// calling printchplenv) but also when building the Chapel compiler itself.
+// Generally speaking, if the checks are about environment and standard
+// chplconfig-style environment variables checks could/should be done in the
+// chplenv scripts; otherwise put the checks here.
 static void validateSettings() {
   checkNotLibraryAndMinimalModules();
 
@@ -1681,6 +1762,8 @@ static void validateSettings() {
   checkIncrementalAndOptimized();
 
   checkUnsupportedConfigs();
+
+  checkRuntimeBuilt();
 }
 
 int main(int argc, char* argv[]) {
@@ -1725,6 +1808,12 @@ int main(int argc, char* argv[]) {
     setupChplGlobals(argv[0]);
 
     postprocess_args();
+
+    if (gContext != nullptr) {
+      gContext->setDebugTraceFlag(fDynoDebugTrace);
+      if (fDynoBreakOnHash != 0)
+        gContext->setBreakOnHash(fDynoBreakOnHash);
+    }
 
     initCompilerGlobals(); // must follow argument parsing
 

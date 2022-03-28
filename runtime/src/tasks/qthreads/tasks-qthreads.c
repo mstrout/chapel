@@ -8,7 +8,7 @@
 //
 
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -447,11 +447,12 @@ static void setupAvailableParallelism(int32_t maxThreads) {
 
         numPUsPerLocale = chpl_topo_getNumCPUsLogical(true);
         if (0 < numPUsPerLocale && numPUsPerLocale < hwpar) {
-            if (verbosity > 0) {
-                printf("QTHREADS: Reduced numThreadsPerLocale=%d to %d "
-                       "to prevent oversubscription of the system.\n",
-                       hwpar, numPUsPerLocale);
-            }
+            char msg[256];
+            sprintf(msg,
+                    "QTHREADS: Reduced numThreadsPerLocale=%d to %d "
+                    "to prevent oversubscription of the system.",
+                    hwpar, numPUsPerLocale);
+            chpl_task_warnNumThreadsPerLocale(msg);
 
             // Do not oversubscribe the system, use all available resources.
             hwpar = numPUsPerLocale;
@@ -1000,35 +1001,11 @@ chpl_bool chpl_task_guardPagesInUse(void)
   return guardPagesInUse;
 }
 
-// XXX: Should probably reflect all shepherds
-uint32_t chpl_task_getNumQueuedTasks(void)
-{
-    return qthread_readstate(NODE_BUSYNESS);
-}
-
-int32_t chpl_task_getNumBlockedTasks(void)
-{
-    // This isn't accurate, but in the absence of better information
-    // it's the best we can do.
-    return 0;
-}
-
 // Threads
 
 uint32_t chpl_task_impl_getFixedNumThreads(void) {
     assert(chpl_qthread_done_initializing);
     return (uint32_t)qthread_num_workers();
-}
-
-uint32_t chpl_task_getNumThreads(void)
-{
-    return (uint32_t)qthread_num_workers();
-}
-
-// Ew. Talk about excessive bookkeeping.
-uint32_t chpl_task_getNumIdleThreads(void)
-{
-    return 0;
 }
 
 /* vim:set expandtab: */

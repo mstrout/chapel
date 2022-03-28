@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -20,7 +20,7 @@
 
 /*
   This module contains the implementation of the map type which is a container
-  that stores key-value associations. 
+  that stores key-value associations.
 
   Maps are not parallel safe by default, but can be made parallel safe by
   setting the param formal `parSafe` to true in any map constructor. When
@@ -79,9 +79,9 @@ module Map {
     /* If `true`, this map will perform parallel safe operations. */
     param parSafe = false;
 
-    /* 
-       Fractional value that specifies how full this map can be 
-       before requesting additional memory. The default value of 
+    /*
+       Fractional value that specifies how full this map can be
+       before requesting additional memory. The default value of
        0.5 means that the map will not resize until the map is more
        than 50% full. The acceptable values for this argument are
        between 0 and 1, exclusive, meaning (0,1). This is useful
@@ -123,31 +123,37 @@ module Map {
                             attempting to resize.
     */
     proc init(type keyType, type valType, param parSafe=false,
-              resizeThreshold = 0.5, initialCapacity = 16) {
+              resizeThreshold=0.5, initialCapacity=16) {
       _checkKeyAndValType(keyType, valType);
       this.keyType = keyType;
       this.valType = valType;
       this.parSafe = parSafe;
-      if boundsChecking then
-        if resizeThreshold <= 0 || resizeThreshold >= 1 then
-          boundsCheckHalt("'resizeThreshold' must be between 0 and 1");
-      this.resizeThreshold = resizeThreshold;
-      table = new chpl__hashtable(keyType, valType, resizeThreshold,
+      if resizeThreshold <= 0 || resizeThreshold >= 1 {
+        warning("'resizeThreshold' must be between 0 and 1.",
+                        " 'resizeThreshold' will be set to 0.5");
+        this.resizeThreshold = 0.5;
+      } else {
+        this.resizeThreshold = resizeThreshold;
+      }
+      table = new chpl__hashtable(keyType, valType, this.resizeThreshold,
                                   initialCapacity);
     }
 
     proc init(type keyType, type valType, param parSafe=false,
-              resizeThreshold = 0.5, initialCapacity = 16)
+              resizeThreshold=0.5, initialCapacity=16)
     where isNonNilableClass(valType) {
       _checkKeyAndValType(keyType, valType);
       this.keyType = keyType;
       this.valType = valType;
       this.parSafe = parSafe;
-      if boundsChecking then
-        if resizeThreshold <= 0 || resizeThreshold >= 1 then
-          boundsCheckHalt("'resizeThreshold' must be between 0 and 1");
-      this.resizeThreshold = resizeThreshold;
-      table = new chpl__hashtable(keyType, valType, resizeThreshold,
+      if resizeThreshold <= 0 || resizeThreshold >= 1 {
+        warning("'resizeThreshold' must be between 0 and 1.",
+                        " 'resizeThreshold' will be set to 0.5");
+        this.resizeThreshold = 0.5;
+      } else {
+        this.resizeThreshold = resizeThreshold;
+      }
+      table = new chpl__hashtable(keyType, valType, this.resizeThreshold,
                                   initialCapacity);
     }
 
@@ -558,7 +564,7 @@ module Map {
       Writes the contents of this map to a channel. The format looks like:
 
         .. code-block:: chapel
-    
+
            {k1: v1, k2: v2, .... , kn: vn}
 
       :arg ch: A channel to write to.
@@ -646,7 +652,7 @@ module Map {
 
     /*
       Removes a key-value pair from the map, with the given key.
-      
+
      :arg k: The key to remove from the map
 
      :returns: `false` if `k` was not in the map.  `true` if it was and removed.
@@ -736,7 +742,7 @@ module Map {
       `lhs`.
 
     :arg lhs: The map to assign to.
-    :arg rhs: The map to assign from. 
+    :arg rhs: The map to assign from.
   */
   operator map.=(ref lhs: map(?kt, ?vt, ?), const ref rhs: map(kt, vt, ?)) {
     if !isCopyableType(kt) || !isCopyableType(vt) then
@@ -931,7 +937,7 @@ module Map {
    */
   class KeyNotFoundError : Error {
     proc init() {}
-    
+
     proc init(k: string) {
       var msg = "key '" + k + "' not found";
       super.init(msg);

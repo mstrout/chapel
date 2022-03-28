@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -3610,7 +3610,11 @@ static
 chpl_cache_taskPrvData_t* task_private_cache_data(void)
 {
   chpl_task_infoRuntime_t* infoRuntime = chpl_task_getInfoRuntime();
-  assert(infoRuntime);
+
+  // propagate NULL to caller if we run in to it
+  if (infoRuntime == NULL)
+    return NULL;
+
   return &infoRuntime->comm_data.cache_data;
 }
 
@@ -4043,6 +4047,11 @@ void chpl_cache_comm_getput_unordered(c_nodeid_t dstnode, void* dstaddr,
 void chpl_cache_comm_getput_unordered_task_fence(void)
 {
   chpl_comm_getput_unordered_task_fence();
+}
+
+int chpl_cache_pagesize(void)
+{
+  return CACHEPAGE_SIZE;
 }
 
 // This is for debugging.

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -141,9 +141,9 @@ module Set {
     /* If `true`, this set will perform parallel safe operations. */
     param parSafe = false;
 
-    /* 
-       Fractional value that specifies how full this map can be 
-       before requesting additional memory. The default value of 
+    /*
+       Fractional value that specifies how full this map can be
+       before requesting additional memory. The default value of
        0.5 means that the map will not resize until the map is more
        than 50% full. The acceptable values for this argument are
        between 0 and 1, exclusive, meaning (0,1). This is useful
@@ -170,15 +170,18 @@ module Set {
                             attempting to resize.
     */
     proc init(type eltType, param parSafe=false, resizeThreshold=0.5,
-              initialCapacity=32) {
+              initialCapacity=16) {
       _checkElementType(eltType);
       this.eltType = eltType;
       this.parSafe = parSafe;
-      if boundsChecking then
-        if resizeThreshold <= 0 || resizeThreshold >= 1 then
-          boundsCheckHalt("'resizeThreshold' must be between 0 and 1");
-      this.resizeThreshold = resizeThreshold;
-      this._htb = new chpl__hashtable(eltType, nothing, resizeThreshold,
+      if resizeThreshold <= 0 || resizeThreshold >= 1 {
+        warning("'resizeThreshold' must be between 0 and 1.",
+                        " 'resizeThreshold' will be set to 0.5");
+        this.resizeThreshold = 0.5;
+      } else {
+        this.resizeThreshold = resizeThreshold;
+      }
+      this._htb = new chpl__hashtable(eltType, nothing, this.resizeThreshold,
                                       initialCapacity);
     }
 
@@ -197,17 +200,20 @@ module Set {
                             attempting to resize.
     */
     proc init(type eltType, iterable, param parSafe=false,
-              resizeThreshold=0.5, initialCapacity=32)
+              resizeThreshold=0.5, initialCapacity=16)
     where canResolveMethod(iterable, "these") lifetime this < iterable {
-      _checkElementType(eltType); 
+      _checkElementType(eltType);
 
       this.eltType = eltType;
       this.parSafe = parSafe;
-      if boundsChecking then
-        if resizeThreshold <= 0 || resizeThreshold >= 1 then
-          boundsCheckHalt("'resizeThreshold' must be between 0 and 1");
-      this.resizeThreshold = resizeThreshold;
-      this._htb = new chpl__hashtable(eltType, nothing, resizeThreshold,
+      if resizeThreshold <= 0 || resizeThreshold >= 1 {
+        warning("'resizeThreshold' must be between 0 and 1.",
+                        " 'resizeThreshold' will be set to 0.5");
+        this.resizeThreshold = 0.5;
+      } else {
+        this.resizeThreshold = resizeThreshold;
+      }
+      this._htb = new chpl__hashtable(eltType, nothing, this.resizeThreshold,
                                       initialCapacity);
       this.complete();
 
@@ -251,7 +257,7 @@ module Set {
     pragma "no doc"
     proc _addElem(in elem: eltType): bool
     where _isSerializable(eltType) {
-        var result = true;
+        var result = false;
 
         on this {
           var (isFullSlot, idx) = _htb.findAvailableSlot(elem);
@@ -284,9 +290,15 @@ module Set {
         var (isFullSlot, idx) = _htb.findAvailableSlot(elem);
 
         if !isFullSlot {
+
+          // This line moves the bits over, 'elem' is dead past this point.
           var moved = moveToValue(elem);
           _htb.fillSlot(idx, moved, none);
           result = true;
+        } else {
+
+          // The set contains the value of 'elem', so clean 'elem' up.
+          chpl__autoDestroy(elem);
         }
       }
 
@@ -353,7 +365,7 @@ module Set {
     proc const contains(const ref x: eltType): bool {
       return contains(element=x);
     }
-    
+
     /*
      As above, but parSafe lock must be held and must be called "on this".
     */
@@ -408,8 +420,8 @@ module Set {
     }
 
     /*
-      Attempt to remove the item from this set with a value equal to `element`. 
-      If an element equal to `element` was removed from this set, return `true`, 
+      Attempt to remove the item from this set with a value equal to `element`.
+      If an element equal to `element` was removed from this set, return `true`,
       else return `false` if no such value was found.
 
       .. warning::
@@ -482,7 +494,7 @@ module Set {
         Modifying this set while iterating over it may invalidate the
         references returned by an iterator and is considered undefined
         behavior.
-      
+
       :yields: A constant reference to an element in this set.
     */
     iter const these() const ref {

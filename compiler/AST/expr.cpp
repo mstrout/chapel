@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -38,6 +38,7 @@
 #include "wellknown.h"
 #include "WhileStmt.h"
 
+#include "global-ast-vecs.h"
 
 #include <cstdio>
 #include <cstdlib>
@@ -286,14 +287,6 @@ void Expr::verifyParent(const Expr* child) {
   if (child && child->parentExpr != this)
     INT_FATAL(this, "bad parent of a child node");
 }
-
-bool Expr::inTree() {
-  if (parentSymbol)
-    return true;
-  else
-    return false;
-}
-
 
 QualifiedType Expr::qualType() {
   INT_FATAL(this, "Illegal call to Expr::qualType()");

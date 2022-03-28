@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -115,7 +115,7 @@ enum ForallIntentTag {
   TFI_CONST_REF,                   //   "
   TFI_REDUCE,                      //   AS    (for Accumulation State)
   TFI_TASK_PRIVATE,                //   TPV
-  // compiler-added helpers
+  // compiler-added helpers; note isCompilerAdded()
   TFI_IN_PARENT,                   //   INP
   TFI_REDUCE_OP,                   //   RP    (for Reduce oP)
   TFI_REDUCE_PARENT_AS,            //   PAS
@@ -456,6 +456,7 @@ public:
   const char* intentDescrString() const;
   bool  isReduce()          const { return intent == TFI_REDUCE;       }
   bool  isTaskPrivate()     const { return intent == TFI_TASK_PRIVATE; }
+  bool  isCompilerAdded()   const;
 
   static ShadowVarSymbol* buildForPrefix(ShadowVarPrefix prefix,
                                          Expr* name, Expr* type, Expr* init);
@@ -675,6 +676,58 @@ public:
   void  replaceChild(BaseAST* old_ast, BaseAST* new_ast)  override;
   void  codegenDef()                                      override;
 };
+
+inline bool Symbol::hasFlag(Flag flag) const {
+  CHECK_FLAG(flag);
+  return flags[flag];
+}
+
+inline void Symbol::addFlag(Flag flag) {
+  CHECK_FLAG(flag);
+  flags.set(flag);
+}
+
+inline void Symbol::copyFlags(const Symbol* other) {
+  flags |= other->flags;
+  qual   = other->qual;
+}
+
+inline void Symbol::removeFlag(Flag flag) {
+  CHECK_FLAG(flag);
+  flags.reset(flag);
+}
+
+inline bool Symbol::hasEitherFlag(Flag aflag, Flag bflag) const {
+  return hasFlag(aflag) || hasFlag(bflag);
+}
+
+inline bool Symbol::isRef() {
+  QualifiedType q = qualType();
+  return (type != NULL) && (q.isRef() || type->symbol->hasFlag(FLAG_REF));
+}
+
+inline bool Symbol::isWideRef() {
+  QualifiedType q = qualType();
+  return (q.isWideRef() || type->symbol->hasFlag(FLAG_WIDE_REF));
+}
+
+inline bool Symbol::isRefOrWideRef() {
+  return isRef() || isWideRef();
+}
+
+// Is this a compiler-added helper / not to be reported to user?
+inline bool ShadowVarSymbol::isCompilerAdded() const {
+  switch (intent) {
+    case TFI_IN_PARENT:
+    case TFI_REDUCE_OP:
+    case TFI_REDUCE_PARENT_AS:
+    case TFI_REDUCE_PARENT_OP:
+      return true;
+    default:
+      return false;
+  }
+}
+
 
 /************************************* | **************************************
 *                                                                             *
